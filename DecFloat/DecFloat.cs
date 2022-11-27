@@ -322,6 +322,33 @@ public class DecFloat
             return One.Div(new DecFloat(!neg, num, dp).Exp2(precisionDigits), precisionDigits);
     }
 
+    public static DecFloat Pi(int precisionDigits)
+    {
+        // Nilakantha
+        var pi = new DecFloat("3");
+        var four = new DecFloat("4");
+        var limit = new DecFloat(false, new byte[] { 1 }, precisionDigits + 5);
+        var a = Two;
+        var b = a.Add(One);
+        var c = b.Add(One);
+        var d = c.Add(One);
+        var e = d.Add(One);
+        for (; ; )
+        {
+            var add = four.Div(a.Mul(b).Mul(c), precisionDigits * 2);
+            pi = pi.Add(add);
+            var sub = four.Div(c.Mul(d).Mul(e), precisionDigits * 2);
+            pi = pi.Sub(sub);
+            if (add.Compare(limit) < 0) break;
+            a = e;
+            b = a.Add(One);
+            c = b.Add(One);
+            d = c.Add(One);
+            e = d.Add(One);
+        }
+        return pi.Round(precisionDigits);
+    }
+
     public override string ToString()
     {
         string s = "";
