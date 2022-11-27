@@ -343,4 +343,12 @@ public class DecFloatTests
         //               8.824977827077554
         Assert.AreEqual("8.82497782707755238594", actual);
     }
+
+    [TestMethod]
+    public void Exp2Negative()
+    {
+        var actual = new DecFloat("-4.5").Exp2(20).ToString();
+        //               .044194173824159216
+        Assert.AreEqual(".044194173824159220275", actual);
+    }
 }

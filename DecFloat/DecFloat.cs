@@ -304,7 +304,7 @@ public class DecFloat
             }
             var remainingExp = this;
             var answer = One;
-            for (int iter = 0; iter < precisionDigits*4; iter++)
+            for (int iter = 0; iter < precisionDigits * 4; iter++)
             {
                 var cmp2 = intpow.Compare(remainingExp);
                 if (cmp2 <= 0)
@@ -319,9 +319,7 @@ public class DecFloat
             return answer.Round(precisionDigits);
         }
         else // negative exp
-        {
-            throw new NotImplementedException();
-        }
+            return One.Div(new DecFloat(!neg, num, dp).Exp2(precisionDigits), precisionDigits);
     }
 
     public override string ToString()
