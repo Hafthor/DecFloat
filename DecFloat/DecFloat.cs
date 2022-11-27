@@ -289,6 +289,41 @@ public class DecFloat
         return a.Round(precisionDigits);
     }
 
+    public DecFloat Exp2(int precisionDigits)
+    {
+        var cmp = this.Compare(Zero);
+        if (cmp == 0) return One;
+        if (cmp > 0) // positive exp
+        {
+            var intexp = Two;
+            var intpow = One;
+            while (intpow.Compare(this) < 0)
+            {
+                intexp = intexp.Mul(intexp);
+                intpow = intpow.Add(intpow);
+            }
+            var remainingExp = this;
+            var answer = One;
+            for (int iter = 0; iter < precisionDigits*4; iter++)
+            {
+                var cmp2 = intpow.Compare(remainingExp);
+                if (cmp2 <= 0)
+                {
+                    answer = answer.Mul(intexp);
+                    remainingExp = remainingExp.Sub(intpow);
+                }
+                if (cmp == 0) return answer;
+                intexp = intexp.Sqrt(precisionDigits * 2);
+                intpow = intpow.Mul(Half);
+            }
+            return answer.Round(precisionDigits);
+        }
+        else // negative exp
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     public override string ToString()
     {
         string s = "";

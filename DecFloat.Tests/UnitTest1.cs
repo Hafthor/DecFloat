@@ -328,4 +328,19 @@ public class DecFloatTests
         Assert.AreEqual(".18502432272541899510", actual);
         //               .185024322725419
     }
+
+    [TestMethod]
+    public void Exp2()
+    {
+        var actual = new DecFloat("24").Exp2(20).ToString();
+        Assert.AreEqual("16777216.00000000000000000000", actual);
+    }
+
+    [TestMethod]
+    public void Exp2Pi()
+    {
+        var actual = new DecFloat("3.14159265359").Exp2(20).ToString();
+        //               8.824977827077554
+        Assert.AreEqual("8.82497782707755238594", actual);
+    }
 }
