@@ -2,13 +2,14 @@
 
 public class DecFloat
 {
-    private readonly bool neg; // true if negative
-    private readonly byte[] num; // number stored in LSB -> MSB order
-    private readonly int dp; // number of decimal places
+    private readonly bool neg;    // true if negative
+    private readonly byte[] num;  // number stored in LSB -> MSB order
+    private readonly int dp;      // number of decimal places
 
     public static readonly DecFloat Zero = new DecFloat(false, Array.Empty<byte>(), 0);
     public static readonly DecFloat One = new DecFloat(false, new byte[] { 1 }, 0);
     public static readonly DecFloat Two = new DecFloat(false, new byte[] { 2 }, 0);
+    public static readonly DecFloat Half = new DecFloat(false, new byte[] { 5 }, 1);
 
     public DecFloat(string s)
     {
@@ -74,7 +75,7 @@ public class DecFloat
         var r = subb ? Sub(a.num, b.num) : Sub(b.num, a.num);
         return new DecFloat(rneg, r, Math.Max(b.dp, dp));
     }
-    
+
     private static byte[] Add(byte[] a, byte[] b)
     {
         var r = new byte[Math.Max(a.Length, b.Length)];
@@ -132,10 +133,7 @@ public class DecFloat
         return new DecFloat(this.neg != b.neg, r, dp + b.dp);
     }
 
-    private byte[] Mul(byte b)
-    {
-        return Mul(num, b);
-    }
+    private byte[] Mul(byte b) => Mul(num, b);
 
     private static byte[] Mul(byte[] num, byte b)
     {
@@ -241,30 +239,27 @@ public class DecFloat
             throw new ArgumentOutOfRangeException("Cannot take log of 0 or negative number");
         var exp = Zero;
         var num = this.Clone();
-        var one = One;
-        var two = new DecFloat("2");
-        var half = new DecFloat("0.5");
-        while (num.Compare(two) >= 0)
+        while (num.Compare(Two) >= 0)
         {
-            num = num.Mul(half);
-            exp = exp.Add(one);
+            num = num.Mul(Half);
+            exp = exp.Add(One);
         }
-        while (num.Compare(one) < 0)
+        while (num.Compare(One) < 0)
         {
-            num = num.Mul(two);
-            exp = exp.Sub(one);
+            num = num.Mul(Two);
+            exp = exp.Sub(One);
         }
         var limit = new DecFloat(false, new byte[] { 1 }, precisionDigits + 4);
-        var fract = one;
-        if (num.Compare(one) == 0) return exp;
+        var fract = One;
+        if (num.Compare(One) == 0) return exp;
         while (fract.Compare(limit) > 0)
         {
-            fract = fract.Mul(half);
+            fract = fract.Mul(Half);
             num = num.Mul(num);
-            if (num.Compare(two) >= 0)
+            if (num.Compare(Two) >= 0)
             {
                 exp = exp.Add(fract);
-                num = num.Div(two, precisionDigits * 2);
+                num = num.Div(Two, precisionDigits * 2);
             }
         }
         return exp.Round(precisionDigits);
@@ -276,12 +271,8 @@ public class DecFloat
         var n = new byte[num.Length];
         Array.Copy(num, n, num.Length);
         while (n.Length > 0)
-        {
-            var digit = LeastSignificantDigit(ref n);
-            s = digit + s;
-        }
+            s = LeastSignificantDigit(ref n) + s;
         if (dp != 0)
-        {
             if (dp < 0)
                 s += new string('0', -dp);
             else
@@ -289,7 +280,7 @@ public class DecFloat
                 if (dp > s.Length) s = new string('0', dp - s.Length) + s;
                 s = s.Insert(s.Length - dp, ".");
             }
-        }
+
         s = s.TrimStart('0');
         if (s == "") s = "0"; else if (neg) s = "-" + s;
         return s;
@@ -330,11 +321,9 @@ public class DecFloat
 
     public DecFloat Round(int decimalPoints)
     {
-        if (decimalPoints > 0)
-            return Mul(new DecFloat(false, new byte[] { 1 }, -decimalPoints)).Round().Mul(new DecFloat(false, new byte[] { 1 }, decimalPoints));
-        if (decimalPoints < 0)
-            return Mul(new DecFloat(false, new byte[] { 1 }, -decimalPoints)).Round().Mul(new DecFloat(false, new byte[] { 1 }, decimalPoints));
-        return Round();
+        if (decimalPoints == 0)
+            return Round();
+        return Mul(new DecFloat(false, new byte[] { 1 }, -decimalPoints)).Round().Mul(new DecFloat(false, new byte[] { 1 }, decimalPoints));
     }
 
     public DecFloat Round()
