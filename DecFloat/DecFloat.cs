@@ -265,6 +265,30 @@ public class DecFloat
         return exp.Round(precisionDigits);
     }
 
+    public DecFloat Sqrt(int precisionDigits)
+    {
+        if (this.Compare(Zero) < 0)
+            throw new ArgumentOutOfRangeException("Cannot take square root of negative number");
+        if (this.Compare(One) == 0) return this;
+        var h = this;
+        var a = Zero;
+        if (h.Compare(One) < 0) h = One;
+        
+        var limit = this.Mul(new DecFloat(false, new byte[] { 1 }, precisionDigits));
+        for (; ; )
+        {
+            var ah = a.Add(h);
+            var sqr = ah.Mul(ah);
+            var cmp = sqr.Sub(this);
+            if (cmp.num.Length == 0) return ah;
+            if (cmp.neg) a = ah;
+            h = h.Mul(Half);
+            if (!cmp.neg && cmp.Compare(limit) < 0) break;
+        }
+
+        return a.Round(precisionDigits);
+    }
+
     public override string ToString()
     {
         string s = "";

@@ -305,4 +305,27 @@ public class DecFloatTests
         var actual = new DecFloat("3.14159265359").Round(4).ToString();
         Assert.AreEqual("3.1416", actual);
     }
+
+    [TestMethod]
+    public void SrqtSquare()
+    {
+        var actual = new DecFloat("1024").Sqrt(20).ToString();
+        Assert.AreEqual("32.00000", actual);
+    }
+
+    [TestMethod]
+    public void Sqrt()
+    {
+        var actual = new DecFloat("420").Sqrt(20).ToString();
+        Assert.AreEqual("20.49390153191919676638", actual);
+        //               20.493901531919196
+    }
+
+    [TestMethod]
+    public void SqrtSmall()
+    {
+        var actual = new DecFloat(".034234").Sqrt(20).ToString();
+        Assert.AreEqual(".18502432272541899510", actual);
+        //               .185024322725419
+    }
 }
