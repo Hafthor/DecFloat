@@ -280,7 +280,7 @@ public class DecFloatTests
     [TestMethod]
     public void Log2Big()
     {
-        var actual = new DecFloat(false, new byte[] { 1 }, -100).Log2(20).ToString();
+        var actual = new DecFloat(false, new uint[] { 1 }, -100).Log2(20).ToString();
         Assert.AreEqual("332.19280948873623478703", actual);
         //               332.192809488736234787
     }

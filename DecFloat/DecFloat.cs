@@ -3,13 +3,13 @@
 public class DecFloat
 {
     private readonly bool neg;    // true if negative
-    private readonly byte[] num;  // number stored in LSB -> MSB order
+    private readonly uint[] num;  // number stored in LSB -> MSB order
     private readonly int dp;      // number of decimal places
 
-    public static readonly DecFloat Zero = new DecFloat(false, Array.Empty<byte>(), 0);
-    public static readonly DecFloat One = new DecFloat(false, new byte[] { 1 }, 0);
-    public static readonly DecFloat Two = new DecFloat(false, new byte[] { 2 }, 0);
-    public static readonly DecFloat Half = new DecFloat(false, new byte[] { 5 }, 1);
+    public static readonly DecFloat Zero = new DecFloat(false, Array.Empty<uint>(), 0);
+    public static readonly DecFloat One = new DecFloat(false, new uint[] { 1 }, 0);
+    public static readonly DecFloat Two = new DecFloat(false, new uint[] { 2 }, 0);
+    public static readonly DecFloat Half = new DecFloat(false, new uint[] { 5 }, 1);
 
     public DecFloat(string s)
     {
@@ -22,34 +22,34 @@ public class DecFloat
         num = Dec2Bin(bdp + adp);
     }
 
-    public DecFloat(bool neg, byte[] num, int dp)
+    public DecFloat(bool neg, uint[] num, int dp)
     {
         this.neg = neg;
         this.num = num;
         this.dp = dp;
     }
 
-    public static byte[] Dec2Bin(string s)
+    public static uint[] Dec2Bin(string s)
     {
-        var b = Array.Empty<byte>();
+        var b = Array.Empty<uint>();
         foreach (var c in s)
             AddDigit(c - '0', ref b);
         return b;
     }
 
-    public static void AddDigit(int d, ref byte[] b)
+    public static void AddDigit(int d, ref uint[] b)
     {
-        int c = d;
+        uint c = (uint)d;
         for (int i = 0; i < b.Length; i++)
         {
-            var r = b[i] * 10 + c;
-            c = r / 256;
-            b[i] = (byte)(r % 256);
+            var r = b[i] * 10l + c;
+            c = (uint)(r / 4294967296);
+            b[i] = (uint)(r % 4294967296);
         }
         if (c > 0)
         {
             Array.Resize(ref b, b.Length + 1);
-            b[b.Length - 1] = (byte)c;
+            b[b.Length - 1] = (uint)c;
         }
     }
 
@@ -76,37 +76,37 @@ public class DecFloat
         return new DecFloat(rneg, r, Math.Max(b.dp, dp));
     }
 
-    private static byte[] Add(byte[] a, byte[] b)
+    private static uint[] Add(uint[] a, uint[] b)
     {
-        var r = new byte[Math.Max(a.Length, b.Length)];
-        int c = 0;
+        var r = new uint[Math.Max(a.Length, b.Length)];
+        uint c = 0;
         for (int i = 0; i < r.Length; i++)
         {
             var ai = i < a.Length ? a[i] : 0;
             var bi = i < b.Length ? b[i] : 0;
-            var ri = ai + bi + c;
-            c = ri / 256;
-            r[i] = (byte)(ri % 256);
+            var ri = (long)ai + bi + c;
+            c = (uint)(ri / 4294967296);
+            r[i] = (uint)(ri % 4294967296);
         }
         if (c > 0)
         {
             Array.Resize(ref r, r.Length + 1);
-            r[r.Length - 1] = (byte)c;
+            r[r.Length - 1] = c;
         }
         return r;
     }
 
-    private static byte[] Sub(byte[] a, byte[] b)
+    private static uint[] Sub(uint[] a, uint[] b)
     {
-        var r = new byte[Math.Max(a.Length, b.Length)];
-        int c = 0;
+        var r = new uint[Math.Max(a.Length, b.Length)];
+        uint c = 0;
         for (int i = 0; i < r.Length; i++)
         {
             var ai = i < a.Length ? a[i] : 0;
             var bi = i < b.Length ? b[i] : 0;
-            var ri = ai - bi - c;
-            c = 0; while (ri < 0) { ri += 256; c++; }
-            r[i] = (byte)ri;
+            var ri = (long)ai - bi - c;
+            c = 0; while (ri < 0) { ri += 4294967296; c++; }
+            r[i] = (uint)ri;
         }
         if (c != 0) throw new Exception("unexpected borrow");
         var rl = r.Length;
@@ -117,7 +117,7 @@ public class DecFloat
 
     public DecFloat Mul(DecFloat b)
     {
-        var r = Array.Empty<byte>();
+        var r = Array.Empty<uint>();
         for (int i = 0; i < b.num.Length; i++)
         {
             var ri = Mul(b.num[i]);
@@ -133,23 +133,23 @@ public class DecFloat
         return new DecFloat(this.neg != b.neg, r, dp + b.dp);
     }
 
-    private byte[] Mul(byte b) => Mul(num, b);
+    private uint[] Mul(uint b) => Mul(num, b);
 
-    private static byte[] Mul(byte[] num, byte b)
+    private static uint[] Mul(uint[] num, uint b)
     {
-        var r = new byte[num.Length];
-        var c = 0;
+        var r = new uint[num.Length];
+        uint c = 0;
         for (int i = 0; i < r.Length; i++)
         {
             var ai = num[i];
-            var ri = (ai * b) + c;
-            c = ri / 256;
-            r[i] = (byte)(ri % 256);
+            var ri = ((ulong)ai * b) + c;
+            c = (uint)(ri / 4294967296);
+            r[i] = (uint)(ri % 4294967296);
         }
         if (c > 0)
         {
             Array.Resize(ref r, r.Length + 1);
-            r[r.Length - 1] = (byte)c;
+            r[r.Length - 1] = c;
         }
         return r;
     }
@@ -186,7 +186,7 @@ public class DecFloat
         // 150 - 69x2 or 138 = 12, x10 = 120
         // 120 - 69x1 or 69  = 51, x10 = 510
 
-        byte[] anum = new byte[this.num.Length], bnum = b.num;
+        uint[] anum = new uint[this.num.Length], bnum = b.num;
         Array.Copy(this.num, anum, this.num.Length);
         int adp = this.dp, bdp = b.dp;
         int rdp = -adp + bdp + 1;
@@ -203,8 +203,8 @@ public class DecFloat
             rdp--;
         }
 
-        byte[][] divs = new byte[11][];
-        divs[0] = Array.Empty<byte>();
+        uint[][] divs = new uint[11][];
+        divs[0] = Array.Empty<uint>();
         divs[1] = bnum;
         for (int i = 2; i <= 10; i++)
             divs[i] = Add(bnum, divs[i - 1]);
@@ -249,7 +249,7 @@ public class DecFloat
             num = num.Mul(Two);
             exp = exp.Sub(One);
         }
-        var limit = new DecFloat(false, new byte[] { 1 }, precisionDigits + 4);
+        var limit = new DecFloat(false, new uint[] { 1 }, precisionDigits + 4);
         var fract = One;
         if (num.Compare(One) == 0) return exp;
         while (fract.Compare(limit) > 0)
@@ -274,7 +274,7 @@ public class DecFloat
         var a = Zero;
         if (h.Compare(One) < 0) h = One;
         
-        var limit = this.Mul(new DecFloat(false, new byte[] { 1 }, precisionDigits));
+        var limit = this.Mul(new DecFloat(false, new uint[] { 1 }, precisionDigits));
         for (; ; )
         {
             var ah = a.Add(h);
@@ -327,7 +327,7 @@ public class DecFloat
         // Nilakantha
         var pi = new DecFloat("3");
         var four = new DecFloat("4");
-        var limit = new DecFloat(false, new byte[] { 1 }, precisionDigits + 5);
+        var limit = new DecFloat(false, new uint[] { 1 }, precisionDigits + 5);
         var a = Two;
         var b = a.Add(One);
         var c = b.Add(One);
@@ -352,7 +352,7 @@ public class DecFloat
     public override string ToString()
     {
         string s = "";
-        var n = new byte[num.Length];
+        var n = new uint[num.Length];
         Array.Copy(num, n, num.Length);
         while (n.Length > 0)
             s = LeastSignificantDigit(ref n) + s;
@@ -370,21 +370,21 @@ public class DecFloat
         return s;
     }
 
-    private static int LeastSignificantDigit(ref byte[] n)
+    private static uint LeastSignificantDigit(ref uint[] n)
     {
-        var mod = 0;
+        uint mod = 0;
         for (int i = n.Length - 1; i >= 0; i--)
         {
-            var num = n[i] + mod * 256;
-            mod = num % 10;
-            n[i] = (byte)(num / 10);
+            var num = n[i] + mod * 4294967296;
+            mod = (uint)(num % 10);
+            n[i] = (uint)(num / 10);
         }
         while (n.Length > 0 && n[n.Length - 1] == 0)
             Array.Resize(ref n, n.Length - 1);
         return mod;
     }
 
-    private static int Compare(byte[] a, byte[] b)
+    private static int Compare(uint[] a, uint[] b)
     {
         if (a.Length > b.Length) return 1;
         if (a.Length < b.Length) return -1;
@@ -407,7 +407,7 @@ public class DecFloat
     {
         if (decimalPoints == 0)
             return Round();
-        return Mul(new DecFloat(false, new byte[] { 1 }, -decimalPoints)).Round().Mul(new DecFloat(false, new byte[] { 1 }, decimalPoints));
+        return Mul(new DecFloat(false, new uint[] { 1 }, -decimalPoints)).Round().Mul(new DecFloat(false, new uint[] { 1 }, decimalPoints));
     }
 
     public DecFloat Round()
@@ -423,7 +423,7 @@ public class DecFloat
 
     public DecFloat Clone()
     {
-        var num = new byte[this.num.Length];
+        var num = new uint[this.num.Length];
         Array.Copy(this.num, num, this.num.Length);
         return new DecFloat(neg, num, dp);
     }
