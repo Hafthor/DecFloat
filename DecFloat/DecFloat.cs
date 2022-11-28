@@ -293,33 +293,31 @@ public class DecFloat
     {
         var cmp = this.Compare(Zero);
         if (cmp == 0) return One;
-        if (cmp > 0) // positive exp
-        {
-            var intexp = Two;
-            var intpow = One;
-            while (intpow.Compare(this) < 0)
-            {
-                intexp = intexp.Mul(intexp);
-                intpow = intpow.Add(intpow);
-            }
-            var remainingExp = this;
-            var answer = One;
-            for (int iter = 0; iter < precisionDigits * 4; iter++)
-            {
-                var cmp2 = intpow.Compare(remainingExp);
-                if (cmp2 <= 0)
-                {
-                    answer = answer.Mul(intexp);
-                    remainingExp = remainingExp.Sub(intpow);
-                }
-                if (cmp == 0) return answer;
-                intexp = intexp.Sqrt(precisionDigits * 2);
-                intpow = intpow.Mul(Half);
-            }
-            return answer.Round(precisionDigits);
-        }
-        else // negative exp
+        if (cmp < 0) // negative exp
             return One.Div(new DecFloat(!neg, num, dp).Exp2(precisionDigits), precisionDigits);
+        // positive exp
+        var intexp = Two;
+        var intpow = One;
+        while (intpow.Compare(this) < 0)
+        {
+            intexp = intexp.Mul(intexp);
+            intpow = intpow.Add(intpow);
+        }
+        var remainingExp = this;
+        var answer = One;
+        for (int iter = 0; iter < precisionDigits * 4; iter++)
+        {
+            var cmp2 = intpow.Compare(remainingExp);
+            if (cmp2 <= 0)
+            {
+                answer = answer.Mul(intexp);
+                remainingExp = remainingExp.Sub(intpow);
+            }
+            if (cmp == 0) return answer;
+            intexp = intexp.Sqrt(precisionDigits * 2);
+            intpow = intpow.Mul(Half);
+        }
+        return answer.Round(precisionDigits);
     }
 
     public static DecFloat Pi(int precisionDigits)
@@ -438,6 +436,22 @@ public class DecFloat
         int i = s.IndexOf('.');
         return i < 0 ? this : new DecFloat(s.Substring(0, i));
     }
+
+    public DecFloat Trunc()
+    {
+        string s = this.ToString();
+        int i = s.IndexOf('.');
+        bool neg = s.StartsWith("-");
+        return i < 0 ? Zero : new DecFloat((neg ? "-" : "") + s.Substring(i));
+    }
+
+    public DecFloat Abs() => new DecFloat(false, num, dp);
+
+    public DecFloat Max(DecFloat b) => this.Compare(b) > 0 ? this : b;
+
+    public DecFloat Min(DecFloat b) => this.Compare(b) < 0 ? this : b;
+
+    public int Sign() => this.Compare(Zero);
 
     public DecFloat Clone()
     {

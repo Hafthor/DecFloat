@@ -307,6 +307,20 @@ public class DecFloatTests
     }
 
     [TestMethod]
+    public void Int()
+    {
+        var actual = new DecFloat("-2.7182818").Int().ToString();
+        Assert.AreEqual("-2", actual);
+    }
+
+    [TestMethod]
+    public void Trunc()
+    {
+        var actual = new DecFloat("-2.7182818").Trunc().ToString();
+        Assert.AreEqual("-.7182818", actual);
+    }
+
+    [TestMethod]
     public void SrqtSquare()
     {
         var actual = new DecFloat("1024").Sqrt(20).ToString();
