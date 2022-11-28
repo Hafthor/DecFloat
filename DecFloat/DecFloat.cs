@@ -328,23 +328,18 @@ public class DecFloat
         var pi = new DecFloat("3");
         var four = new DecFloat("4");
         var limit = new DecFloat(false, new uint[] { 1 }, precisionDigits + 5);
-        var a = Two;
-        var b = a.Add(One);
-        var c = b.Add(One);
-        var d = c.Add(One);
-        var e = d.Add(One);
+        long a = 2, b = 3, c = 4, d = 5, e = 6;
         for (; ; )
         {
-            var add = four.Div(a.Mul(b).Mul(c), precisionDigits * 2);
-            pi = pi.Add(add);
-            var sub = four.Div(c.Mul(d).Mul(e), precisionDigits * 2);
-            pi = pi.Sub(sub);
+            var add = four.Div(new DecFloat("" + a * b * c), precisionDigits * 2);
+            var sub = four.Div(new DecFloat("" + c * d * e), precisionDigits * 2);
+            pi = pi.Add(add).Sub(sub);
             if (add.Compare(limit) < 0) break;
             a = e;
-            b = a.Add(One);
-            c = b.Add(One);
-            d = c.Add(One);
-            e = d.Add(One);
+            b += 4;
+            c += 4;
+            d += 4;
+            e += 4;
         }
         return pi.Round(precisionDigits);
     }
