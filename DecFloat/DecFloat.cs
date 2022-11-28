@@ -349,6 +349,22 @@ public class DecFloat
         return pi.Round(precisionDigits);
     }
 
+    public static DecFloat E(int precisionDigits)
+    {
+        var fact = One;
+        var e = One;
+        long i = 0;
+        var limit = new DecFloat(false, new uint[] { 1 }, precisionDigits + 5);
+        for(; ;)
+        {
+            fact = fact.Mul(new DecFloat("" + ++i));
+            var inv = One.Div(fact, precisionDigits * 2);
+            e = e.Add(inv);
+            if (inv.Compare(limit) < 0) break;
+        }
+        return e.Round(precisionDigits);
+    }
+
     public override string ToString()
     {
         string s = "";
@@ -421,10 +437,28 @@ public class DecFloat
         return num;
     }
 
+    public DecFloat Int()
+    {
+        string s = this.ToString();
+        int i = s.IndexOf('.');
+        return i < 0 ? this : new DecFloat(s.Substring(0, i));
+    }
+
     public DecFloat Clone()
     {
         var num = new uint[this.num.Length];
         Array.Copy(this.num, num, this.num.Length);
         return new DecFloat(neg, num, dp);
+    }
+
+    public DecFloat Mod(DecFloat b, int maxDigitsOfPrecision)
+    {
+        var div = this.Div(b, maxDigitsOfPrecision).Int();
+        return this.Sub(div.Mul(b));
+    }
+
+    public DecFloat Pow(DecFloat b, int maxDigitsOfPrecision)
+    {
+        return this.Log2(maxDigitsOfPrecision).Mul(b).Exp2(maxDigitsOfPrecision);
     }
 }
