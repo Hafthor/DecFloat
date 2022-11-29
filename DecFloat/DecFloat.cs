@@ -322,24 +322,32 @@ public class DecFloat
 
     public static DecFloat Pi(int precisionDigits)
     {
-        // Nilakantha
-        var pi = new DecFloat("3");
-        var four = new DecFloat("4");
-        var limit = new DecFloat(false, new uint[] { 1 }, precisionDigits + 5);
-        long a = 2, b = 3, c = 4, d = 5, e = 6;
-        for (; ; )
-        {
-            var add = four.Div(new DecFloat("" + a * b * c), precisionDigits * 2);
-            var sub = four.Div(new DecFloat("" + c * d * e), precisionDigits * 2);
-            pi = pi.Add(add).Sub(sub);
-            if (add.Compare(limit) < 0) break;
-            a = e;
-            b += 4;
-            c += 4;
-            d += 4;
-            e += 4;
+        // Quadratic convergence (1984)
+        var half = new DecFloat(".5");
+        var two = new DecFloat("2");
+        var sqrt2 = two.Sqrt(precisionDigits + 2);
+        var a = sqrt2;
+        var b = Zero;
+        var p = sqrt2.Add(two);
+        var limit = new DecFloat(false, new uint[] { 1 }, precisionDigits + 2);
+
+        for (int i = 0; i < precisionDigits; i++) {
+            var sqrta = a.Sqrt(precisionDigits + 2);
+            var an = sqrta.Add(One.Div(sqrta, precisionDigits + 2)).Mul(half);
+            var bn = One.Add(b).Mul(sqrta).Div(a.Add(b), precisionDigits + 2);
+            var pn = One.Add(an).Mul(p).Mul(bn).Div(One.Add(bn), precisionDigits + 2);
+            if (limit.Compare(pn.Sub(p).Abs()) > 0) break;
+            a = an; b = bn; p = pn;
         }
-        return pi.Round(precisionDigits);
+        return p.Round(precisionDigits);
+    }
+
+    public static DecFloat Fact(uint n)
+    {
+        var fact = One;
+        for (uint i = 2; i <= n; i++)
+            fact = fact.Mul(new DecFloat(false, new uint[] { i }, 0));
+        return fact;
     }
 
     public static DecFloat E(int precisionDigits)

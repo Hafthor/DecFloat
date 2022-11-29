@@ -369,17 +369,15 @@ public class DecFloatTests
     [TestMethod]
     public void Pi()
     {
-        var actual = DecFloat.Pi(10).ToString();
-        //               3.1415926535897932384626433832795028841971693993751058209749445923078164
-        Assert.AreEqual("3.1415926536", actual);
+        var actual = DecFloat.Pi(70).ToString();
+        Assert.AreEqual("3.1415926535897932384626433832795028841971693993751058209749445923078164", actual);
     }
 
     [TestMethod]
     public void E()
     {
-        var actual = DecFloat.E(30).ToString();
-        //               2.718281828459045235360287471352662497757247093699959574966967627724076630353
-        Assert.AreEqual("2.718281828459045235360287471353", actual);
+        var actual = DecFloat.E(70).ToString();
+        Assert.AreEqual("2.7182818284590452353602874713526624977572470936999595749669676277240766", actual);
     }
 
     [TestMethod]
