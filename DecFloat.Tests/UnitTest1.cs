@@ -344,6 +344,13 @@ public class DecFloatTests
     }
 
     [TestMethod]
+    public void Cbrt()
+    {
+        var actual = new DecFloat("420").Cbrt(20).ToString();
+        Assert.AreEqual("7.48887238721850719786", actual);
+    }
+
+    [TestMethod]
     public void Exp2()
     {
         var actual = new DecFloat("24").Exp2(20).ToString();
@@ -393,5 +400,12 @@ public class DecFloatTests
         var actual = new DecFloat("3.14").Pow(new DecFloat("2.718"), 20).ToString();
         //               22.420989921777696
         Assert.AreEqual("22.42098992177769557497", actual);
+    }
+
+    [TestMethod]
+    public void Fact()
+    {
+        var actual = DecFloat.Fact(69).ToString();
+        Assert.AreEqual("171122452428141311372468338881272839092270544893520369393648040923257279754140647424000000000000000", actual);
     }
 }

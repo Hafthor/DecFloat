@@ -1,7 +1,10 @@
-﻿namespace DecFloat;
+﻿using System.Text;
+
+namespace DecFloat;
 
 public class DecFloat
 {
+    public const long FOUR_GIG = 4294967296;
     private readonly bool neg;    // true if negative
     private readonly uint[] num;  // number stored in LSB -> MSB order
     private readonly int dp;      // number of decimal places
@@ -42,9 +45,9 @@ public class DecFloat
         uint c = (uint)d;
         for (int i = 0; i < b.Length; i++)
         {
-            var r = b[i] * 10l + c;
-            c = (uint)(r / 4294967296);
-            b[i] = (uint)(r % 4294967296);
+            var r = b[i] * 10L + c;
+            c = (uint)(r / FOUR_GIG);
+            b[i] = (uint)(r % FOUR_GIG);
         }
         if (c > 0)
         {
@@ -53,13 +56,15 @@ public class DecFloat
         }
     }
 
+    public bool IsZero => num.Length == 0 || num.All((x) => x == 0);
+
     public DecFloat Sub(DecFloat b) => Add(new DecFloat(!b.neg, b.num, b.dp));
 
     public DecFloat Add(DecFloat b)
     {
         var a = this;
-        if (b.ToString() == "0") return this;
-        if (a.ToString() == "0") return b;
+        if (b.IsZero) return this;
+        if (a.IsZero) return b;
         if (dp > b.dp)
             b = b.Mul(new DecFloat("1" + new string('0', dp - b.dp)));
         else if (dp < b.dp)
@@ -85,8 +90,8 @@ public class DecFloat
             var ai = i < a.Length ? a[i] : 0;
             var bi = i < b.Length ? b[i] : 0;
             var ri = (long)ai + bi + c;
-            c = (uint)(ri / 4294967296);
-            r[i] = (uint)(ri % 4294967296);
+            c = (uint)(ri / FOUR_GIG);
+            r[i] = (uint)(ri % FOUR_GIG);
         }
         if (c > 0)
         {
@@ -105,7 +110,7 @@ public class DecFloat
             var ai = i < a.Length ? a[i] : 0;
             var bi = i < b.Length ? b[i] : 0;
             var ri = (long)ai - bi - c;
-            c = 0; while (ri < 0) { ri += 4294967296; c++; }
+            c = 0; while (ri < 0) { ri += FOUR_GIG; c++; }
             r[i] = (uint)ri;
         }
         if (c != 0) throw new Exception("unexpected borrow");
@@ -143,8 +148,8 @@ public class DecFloat
         {
             var ai = num[i];
             var ri = ((ulong)ai * b) + c;
-            c = (uint)(ri / 4294967296);
-            r[i] = (uint)(ri % 4294967296);
+            c = (uint)(ri / FOUR_GIG);
+            r[i] = (uint)(ri % FOUR_GIG);
         }
         if (c > 0)
         {
@@ -209,7 +214,7 @@ public class DecFloat
         for (int i = 2; i <= 10; i++)
             divs[i] = Add(bnum, divs[i - 1]);
 
-        var result = "";
+        var result = new StringBuilder();
         while (result.Length < maxDigitsOfPrecision)
         {
             int cmp = 0;
@@ -218,7 +223,7 @@ public class DecFloat
                 cmp = Compare(anum, divs[i]);
                 if (cmp >= 0)
                 {
-                    result += i;
+                    result.Append(i);
                     anum = Sub(anum, divs[i]);
                     anum = Mul(anum, 10);
                     break;
@@ -226,11 +231,11 @@ public class DecFloat
             }
             if (cmp == 0) break;
         }
-        if (rdp < 0) { result = new string('0', -rdp) + result; rdp = 0; }
-        if (rdp > result.Length) result += new string('0', rdp - result.Length);
+        if (rdp < 0) { result.Insert(0, new string('0', -rdp)); rdp = 0; }
+        if (rdp > result.Length) result.Append(new string('0', rdp - result.Length));
         result = result.Insert(rdp, ".");
-        if (this.neg != b.neg) result = "-" + result;
-        return new DecFloat(result);
+        if (this.neg != b.neg) result.Insert(0, "-");
+        return new DecFloat(result.ToString());
     }
 
     public DecFloat Log2(int precisionDigits)
@@ -264,7 +269,10 @@ public class DecFloat
         }
         return exp.Round(precisionDigits);
     }
+    public DecFloat Ln(int precisionDigits) => this.Log2(precisionDigits).Div(E(precisionDigits).Log2(precisionDigits), precisionDigits);
+    public DecFloat Log10(int precisionDigits) => this.Log2(precisionDigits).Div(new DecFloat("10").Log2(precisionDigits), precisionDigits);
 
+    public DecFloat Sqr() => this.Mul(this);
     public DecFloat Sqrt(int precisionDigits)
     {
         if (this.Compare(Zero) < 0)
@@ -278,7 +286,32 @@ public class DecFloat
         for (; ; )
         {
             var ah = a.Add(h);
-            var sqr = ah.Mul(ah);
+            var sqr = ah.Sqr();
+            var cmp = sqr.Sub(this);
+            if (cmp.num.Length == 0) return ah;
+            if (cmp.neg) a = ah;
+            h = h.Mul(Half);
+            if (!cmp.neg && cmp.Compare(limit) < 0) break;
+        }
+
+        return a.Round(precisionDigits);
+    }
+
+    public DecFloat Cube() => this.Mul(this).Mul(this);
+    public DecFloat Cbrt(int precisionDigits)
+    {
+        if (this.Compare(Zero) < 0)
+            throw new ArgumentOutOfRangeException("Cannot take square root of negative number");
+        if (this.Compare(One) == 0) return this;
+        var h = this;
+        var a = Zero;
+        if (h.Compare(One) < 0) h = One;
+
+        var limit = this.Mul(new DecFloat(false, new uint[] { 1 }, precisionDigits));
+        for (; ; )
+        {
+            var ah = a.Add(h);
+            var sqr = ah.Cube();
             var cmp = sqr.Sub(this);
             if (cmp.num.Length == 0) return ah;
             if (cmp.neg) a = ah;
@@ -319,10 +352,12 @@ public class DecFloat
         }
         return answer.Round(precisionDigits);
     }
+    public DecFloat Exp(int precisionDigits) => this.Mul(E(precisionDigits).Log2(precisionDigits)).Exp2(precisionDigits);
+    public DecFloat Exp10(int precisionDigits) => this.Mul(new DecFloat("10").Log2(precisionDigits)).Exp2(precisionDigits);
 
     public static DecFloat Pi(int precisionDigits)
     {
-        // Quadratic convergence (1984)
+        // Borwein iterative quadratic convergence (1984)
         var half = new DecFloat(".5");
         var two = new DecFloat("2");
         var sqrt2 = two.Sqrt(precisionDigits + 2);
@@ -331,7 +366,8 @@ public class DecFloat
         var p = sqrt2.Add(two);
         var limit = new DecFloat(false, new uint[] { 1 }, precisionDigits + 2);
 
-        for (int i = 0; i < precisionDigits; i++) {
+        for (double i = 1; i < precisionDigits; i *= 1.9)
+        {
             var sqrta = a.Sqrt(precisionDigits + 2);
             var an = sqrta.Add(One.Div(sqrta, precisionDigits + 2)).Mul(half);
             var bn = One.Add(b).Mul(sqrta).Div(a.Add(b), precisionDigits + 2);
@@ -344,10 +380,20 @@ public class DecFloat
 
     public static DecFloat Fact(uint n)
     {
+        uint fsub = 1;
         var fact = One;
         for (uint i = 2; i <= n; i++)
-            fact = fact.Mul(new DecFloat(false, new uint[] { i }, 0));
-        return fact;
+        {
+            var fnext = (ulong)fsub * i;
+            if (fnext > FOUR_GIG)
+            {
+                fact = fact.Mul(new DecFloat(false, new uint[] { fsub }, 0));
+                fsub = i;
+            }
+            else
+                fsub = (uint)fnext;
+        }
+        return fact.Mul(new DecFloat(false, new uint[] { fsub }, 0));
     }
 
     public static DecFloat E(int precisionDigits)
@@ -355,11 +401,11 @@ public class DecFloat
         var fact = One;
         var e = One;
         long i = 0;
-        var limit = new DecFloat(false, new uint[] { 1 }, precisionDigits + 5);
+        var limit = new DecFloat(false, new uint[] { 1 }, precisionDigits + 2);
         for(; ;)
         {
             fact = fact.Mul(new DecFloat("" + ++i));
-            var inv = One.Div(fact, precisionDigits * 2);
+            var inv = One.Div(fact, precisionDigits + 2);
             e = e.Add(inv);
             if (inv.Compare(limit) < 0) break;
         }
@@ -392,7 +438,7 @@ public class DecFloat
         uint mod = 0;
         for (int i = n.Length - 1; i >= 0; i--)
         {
-            var num = n[i] + mod * 4294967296;
+            var num = n[i] + mod * FOUR_GIG;
             mod = (uint)(num % 10);
             n[i] = (uint)(num / 10);
         }
