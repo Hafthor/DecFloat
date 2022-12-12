@@ -83,6 +83,13 @@ public class DecFloatTests
     }
 
     [TestMethod]
+    public void MulPrecision()
+    {
+        var actual = new DecFloat("3.14").Mul(new DecFloat("1.00")).ToString();
+        Assert.AreEqual("3.1400", actual);
+    }
+
+    [TestMethod]
     public void AddNegatives()
     {
         var actual = new DecFloat("-1234").Add(new DecFloat("-1234")).ToString();
